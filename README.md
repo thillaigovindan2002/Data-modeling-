@@ -431,6 +431,205 @@ Interview One‑liner: “External tables give flexibility — you manage the da
 | Governance | Simplified, Databricks controls | Flexible, user controls |
 | Best Use | New projects, full governance | Existing lakes, cross‑platform sharing |
 
+### ADF 
+
+## Exception Handling in Pipeline
+
+Handle failures via On‑Failure activities in ADF.
+
+Use retry policies for transient errors.
+
+Apply try/except in Databricks PySpark.
+
+Use EXCEPTION blocks in Snowflake scripting.
+
+## Ingest Multiple JSON Files → Snowflake
+Ingest files via Copy Activity with wildcard paths in ADLS.
+
+Transform schema differences in Databricks notebooks.
+
+Load results into Snowflake tables via JDBC/Snowpipe.
+
+Orchestrate with ADF pipeline.
+## Large‑Volume Data Ingestion (2 TB Oracle → Azure SQL)
+Extract data with partitioned copy in ADF.
+
+Enable parallelism and compress files.
+
+Load into Azure SQL using PolyBase/Bulk Insert.
+
+Monitor IR and DB performance.
+## Python Modules Used
+pandas → data manipulation.
+
+pyodbc/snowflake‑connector → DB connectivity.
+
+logging → error handling.
+
+os/sys → file operations.
+
+json → semi‑structured parsing.
+
+## Security for External Sources
+
+Connect via Self‑Hosted IR.
+
+Store credentials in Azure Key Vault.
+
+Use TLS/SSL encryption.
+
+Apply RBAC in Snowflake.
+
+## Connection Passes Test but Fails at Runtime
+Check firewall/network rules.
+
+Verify IR availability.
+
+Validate authentication tokens.
+
+Inspect schema mapping.
+## Migrating Teradata Views → Azure SQL
+Extract Teradata view definitions.
+
+Convert SQL syntax to T‑SQL.
+
+Migrate base tables via Copy Activity.
+
+Recreate views with Stored Procedure Activity.
+## Execute 9 Stored Procedures
+
+Use Stored Procedure Activity in ADF.
+
+Chain sequentially with success dependencies.
+
+Or loop with ForEach activity.
+
+## Multi‑Format Ingestion (CSV, JSON, Parquet)
+
+Ingest via Copy Activity into ADLS.
+
+Transform in Databricks notebooks (PySpark).
+
+Load into Snowflake/Azure SQL via JDBC.
+
+Orchestrate with ADF pipeline.
+
+## Pipeline Fails Intermittently (On‑Prem DB)
+
+Check network stability.
+
+Validate IR health.
+
+Add retry policies.
+
+Monitor logs for transient errors.
+
+## Medallion Architecture
+Bronze → raw data.
+
+Silver → cleaned/standardized.
+
+Gold → curated/aggregated.\
+
+## Azure SQL → Snowflake Load
+
+Source: Azure SQL via Linked Service.
+
+Sink: Snowflake via JDBC/Snowpipe.
+
+Optionally stage in ADLS.
+
+## Pipeline Debug (2 min → 20 min)
+
+Check source/target DB performance.
+
+Inspect IR health.
+
+Review query optimization.
+
+Monitor data volume changes.
+## Dynamic Tables in Snowflake
+
+Define incrementally refreshed tables.
+
+Auto‑update with refresh schedules.
+
+## Blob → Snowflake Confirmed Tables (E2E)
+
+Ingest raw files into Snowflake staging.
+
+Transform via Bronze → Silver → Gold layers.
+
+Load into confirmed fact/dimension tables.
+
+## Snowflake Tasks
+
+Create scheduled SQL jobs.
+
+Automate incremental loads and transformations.
+
+## Schema Drift (Changing Column Names)
+
+Ingest into staging tables with generic schema.
+
+Apply dynamic mapping in ADF/Databricks.
+
+## CTE vs Subquery
+CTE → reusable, improves readability.
+
+Subquery → inline, less reusable.
+
+## SCD Type 2 Transaction
+Insert new row for change.
+
+Close old row with End_Date.
+
+Mark active row with Is_Current.
+## Deduplication in Snowflake
+Use ROW_NUMBER() OVER (PARTITION BY … ORDER BY …).
+
+Keep first occurrence, remove duplicates.
+
+## SP Failure & Audit Logging
+Log SP name, timestamp, error message into audit table.
+
+Use ADF on‑failure path to insert logs.
+## Git Merge Safety
+
+Pull latest branch before merge.
+
+Run diff checks.
+
+Ensure only your changes are staged.
+## Query Optimization
+
+Add clustering keys.
+
+Use result cache.
+
+Avoid SELECT *.
+
+Break queries into smaller steps.
+
+## User Story Dependency & Deadlines
+
+Communicate dependency early.
+
+Parallelize other tasks.
+
+Stretch if necessary to meet deadlines
+## Critical Deployment Under Pressure
+Prioritize essential changes.
+
+Prepare rollback plan.
+
+Collaborate closely with team.
+
+Monitor post‑deployment.
+
+
+
+
 
 
 
