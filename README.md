@@ -627,6 +627,201 @@ Collaborate closely with team.
 
 Monitor post‑deployment.
 
+### ADF Trigger Types
+Schedule Trigger → Runs at fixed times (daily/hourly).
+
+Event Trigger → Runs when a file is created/deleted in storage.
+
+Tumbling Window Trigger → Runs for fixed time windows (time‑partitioned data).
+
+Manual Trigger → Developer clicks Trigger Now.
+***These are pipeline orchestration triggers — they decide when ADF pipelines run.***
+## Spark Streaming Trigger Levels
+
+| Trigger | Description | Default? | Use Case |
+| --- | --- | --- | --- |
+| **Default (Micro‑batch)** | Processes new data ASAP | ✅ Yes | Most production pipelines |
+| **processingTime** | Runs at fixed intervals (e.g., every 30s, 1 min) | ❌ No | Control compute cost |
+| **availableNow** | Processes all available data once, then stops | ❌ No | Incremental batch loads |
+| **continuous** | Low‑latency continuous processing | ❌ No | Fraud detection, IoT |
+
+## Difference: continuous vs processingTime
+
+~~~~~
+df.writeStream.trigger(processingTime="30 seconds").start()
+~~~~~
+Runs a micro‑batch every 30 seconds.
+
+The "30 seconds" value = processing interval.
+~~~~
+df.writeStream.trigger(continuous="30 seconds").start()
+~~~~~
+Runs in true continuous mode (low latency).
+
+The "30 seconds" value = checkpoint interval, not processing interval.
+## Production Scenarios
+**Directory Listing + Default (Micro‑batch)**
+~~~~
+spark.readStream \
+  .format("cloudFiles") \
+  .option("cloudFiles.format","csv") \
+  .option("cloudFiles.useNotifications","false") \
+  .load("/input") \
+  .writeStream \
+  .start()
+~~~~~~
+scans the folder continuously and immediately processes new files in micro‑batches ,the default Auto Loader behavior, mainly suited for small projects or testing.”
+
+** Directory Listing + processingTime**
+~~~~
+df.writeStream \
+  .trigger(processingTime="1 minute") \
+  .start()
+~~~~
+Work → Scans folder every 1 minute → processes files in batches.
+
+Single Line → “Processes files in fixed intervals 
+
+**Directory Listing + availableNow**
+~~~~~
+df.writeStream \
+  .trigger(availableNow=True) \
+  .start()
+~~~~~
+Work → Scans folder once → processes all files → stops automatically.
+
+**Directory Listing + Continuous**
+~~~~~
+df.writeStream \
+  .trigger(continuous="1 second") \
+  .start()
+~~~~~~
+Work → Scans folder continuously → processes files instantly → keeps running.
+
+**File Notification + Default**
+~~~~
+df.writeStream \
+  .option("cloudFiles.useNotifications","true") \
+  .start()
+~~~~~
+Work → Event Grid notification → Auto Loader starts micro‑batch immediately.
+**File Notification + processingTime**
+~~~~~
+df.writeStream \
+  .option("cloudFiles.useNotifications","true") \
+  .trigger(processingTime="1 minute") \
+  .start()
+~~~~~
+Work → Collects notifications → processes every X minutes.
+
+**File Notification + availableNow**
+~~~~~
+df.writeStream \
+  .option("cloudFiles.useNotifications","true") \
+  .trigger(availableNow=True) \
+  .start()
+~~~~~
+Work → Processes all pending notifications once → stops.
+**File Notification + Continuous**
+~~~~~
+df.writeStream \
+  .option("cloudFiles.useNotifications","true") \
+  .trigger(continuous="1 second") \
+  .start()
+~~~~~~
+Work → Event notification → file processed almost instantly → pipeline keeps running.
+| **File Detection** | **Trigger** | **How it works** | **Production Use** |
+| --- | --- | --- | --- |
+| **Directory Listing** | Default | *Scans folder continuously → processes new files immediately* | Small projects |
+| **Directory Listing** | processingTime | *Scans every X minutes → processes batch* | Medium workloads / cost control |
+| **Directory Listing** | availableNow | *Scans once → processes all files → stops* | Initial loads, daily batch, migrations |
+| **Directory Listing** | Continuous | *Scans nonstop → processes instantly* | Rare (latency due to scanning) |
+| **File Notification** | Default | *Event received → micro‑batch starts immediately* | ⭐ Most common (80–90% production) |
+| **File Notification** | processingTime | *Collects events → processes every X minutes* | Cost optimization |
+| **File Notification** | availableNow | *Processes all pending notifications once → stops* | Incremental batch loads |
+| **File Notification** | Continuous | *Event → processed almost instantly* | Ultra‑low latency (IoT, fraud detection, trading) |
+
+## Lakeflow Pipeline Modes
+
+Formerly Delta Live Tables (DLT).
+
+They do not use Spark Structured Streaming triggers (processingTime, continuous, etc.).
+
+Instead, they rely on pipeline execution modes managed by Databricks.
+
+| **Mode** | **How it Works** | **Production Use** |
+| --- | --- | --- |
+| **Manual Run** | User clicks Run in Databricks UI or via API/CLI → executes once | Development, unit testing, schema validation |
+| **Scheduled Run** | Runs automatically on a cron schedule (hourly, daily, weekly) | Batch ETL, reporting, warehouse refresh |
+| **Continuous Mode** | Pipeline stays running and continuously processes new data | ⭐ Most common → Real‑time streaming (Kafka, Event Hub, Auto Loader, IoT, CDC) |
+
+Example Architectures
+Kafka → Lakeflow Pipeline (Continuous) → Bronze → Silver → Gold → Power BI
+
+ADLS → Auto Loader → Lakeflow Pipeline (Continuous) → Bronze → Silver → Gold
+
+## Production Combinations
+| **Source** | **File Detection** | **SDP Pipeline Mode** | **Recommended Use** |
+| --- | --- | --- | --- |
+| **ADLS** | **File Notification** | **Continuous** | ⭐⭐⭐⭐⭐ Most common |
+| **ADLS** | File Notification | Scheduled | Daily/hourly incremental loads |
+| **ADLS** | Directory Listing | Scheduled | Small/medium projects |
+| **Kafka** | Streaming | Continuous | ⭐⭐⭐⭐⭐ |
+| **Event Hub** | Streaming | Continuous | ⭐⭐⭐⭐⭐ |
+
+ Why File Notification + Continuous is Preferred
+No folder scanning → avoids repeated directory lookups.
+
+Low latency → files processed immediately after arrival.
+
+Lower storage API costs → fewer calls to ADLS.
+
+Automatic file processing → event‑driven, reliable, scalable.
+
+🔹 Banking Production Example
+Oracle CDC → ADLS → Event Grid Notification → Queue → Auto Loader → Lakeflow Pipeline (Continuous) → Bronze → Silver → Gold → Power BI
+
+👉 Why this works best:
+
+Oracle CDC captures changes.
+
+Event Grid pushes notifications to Auto Loader.
+
+Lakeflow Pipeline (Continuous) processes instantly.
+
+Bronze → Silver → Gold layers ensure clean, curated data.
+
+Power BI consumes governed data for reporting.
+
+## How Lakeflow Pipeline Compute is Created
+You do not create clusters manually.
+
+Instead, Databricks provisions compute automatically when you define a pipeline.
+
+Steps:
+
+Go to Workspace → Pipelines → Create Pipeline.
+
+Provide details:
+
+Pipeline Name → e.g., customer_pipeline.
+
+Notebook → e.g., customer_pipeline.py.
+
+Target Catalog → e.g., main.
+
+Target Schema → e.g., bronze.
+
+Mode → Triggered (batch) or Continuous (streaming).
+
+Compute → Managed by Databricks.
+
+Click Create → Databricks provisions compute automatically.
+
+
+
+
+
 
 
 
