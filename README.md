@@ -818,15 +818,176 @@ Compute → Managed by Databricks.
 
 Click Create → Databricks provisions compute automatically.
 
+### query level turning 
 
 
+These are optimizations applied directly at the query level to reduce shuffle, skew, and unnecessary computation:
+
+**Broadcast Join** 
+Send small DataFrame to all executors to avoid shuffle.
+~~~~~~
+large_df.join(broadcast(small_df), "id")
+~~~~~~
+**Repartition Before Join** 
+Ensures same join keys go to same partitions.
+~~~~~
+df1.repartition("id").join(df2.repartition("id"), "id")
+~~~~~
+**Filter Before Join**
+Reduce data size early.
+~~~~~~
+df1.filter(col("status")=="active").join(df2,"id")
+~~~~~~
+**Bucketing Optimization**
+Pre‑bucket data to reduce shuffle.
+~~~~~
+df.write.bucketBy(8,"id").saveAsTable("emp_bucket")
+~~~~~
+**Select Required Columns** 
+Avoid moving unnecessary data.
+~~~~~
+df1.select("id","name").join(df2.select("id","dept"),"id")
+~~~~~~
+**Handle Skew Joins** 
+Adaptive Query Execution (AQE) splits skewed partitions.
+~~~~~~
+spark.conf.set("spark.sql.adaptive.skewJoin.enabled","true")
+~~~~~~~
+**Cache Frequently Used DataFrames → Prevent recomputation.**
+
+~~~~
+df.cache()
+~~~~
+Semi Join Instead of Inner Join → Faster existence checks.
+
+Join Order (Small Table First) → Broadcast small table to reduce shuffle.
+
+## Performance‑Level Tuning in PySpark
+These improve overall job execution and resource usage:
+
+Partition Pruning & Column Pruning → Read only needed partitions/columns.
+
+Predicate Pushdown → Push filters to data source (Parquet, Delta).
+
+Caching/Persisting → Reuse intermediate results.
+
+Repartition vs Coalesce → Control parallelism.
+
+Adaptive Query Execution (AQE) → Dynamic optimization at runtime.
+
+Shuffle Partitions → Tune partition count to avoid small files.
+
+Spill Handling → Manage memory spills to disk.
+
+Skew Handling → Detect and rebalance skewed keys.
+
+Explain Plan Reading → Use df.explain(True) to identify expensive shuffles, joins, scans.
+
+## Delta Lake Optimization
+These focus on storage‑level and metadata optimizations:
+
+OPTIMIZE → Merge small files into larger ones.
+
+ZORDER BY → Co‑locate related data for faster filtering.
+
+Liquid Clustering → Incremental clustering using metadata.
+
+Data Skipping → Skip irrelevant files using min/max metadata.
+
+Partitioning → Organize data by low‑cardinality columns.
+
+VACUUM → Remove obsolete files, free storage.
+
+Optimize Writes → Produce well‑sized output files.
+
+Auto Compaction → Merge small files automatically after writes.
+
+**Most Asked Interview Scenario
+Q: “How do you optimize slow queries?”  
+A: “I analyze execution plans to identify shuffles, skew joins, sort merge joins, full scans, and missing predicate pushdown or partition pruning.”**
+
+| **Optimization** | **Execution Plan Keyword** | **Interview Point** |
+| --- | --- | --- |
+| **Broadcast Join** | ``BroadcastHashJoin`` | *Small table broadcast → avoids shuffle.* |
+| **Sort Merge Join** | ``SortMergeJoin``, ``Exchange``, ``Sort`` | *Used for large joins → expensive shuffle.* |
+| **Predicate Pushdown** | ``PushedFilters:`` | *Filter pushed to source → reduces scan size.* |
+| **Partition Pruning** | ``PartitionFilters:`` | *Reads only relevant partitions → faster scans.* |
+| **Window Functions** | ``Window``, ``Sort``, ``Exchange`` | *Expensive → optimize by reducing sort/shuffle.* |
 
 
+## Debugging Slow Spark Jobs
+When a Spark job runs slow, the first step is to read the execution plan:
 
+Expensive shuffles → Large data movement across nodes.
 
+Skew joins → One partition has too many rows.
 
+Sort Merge Joins → Heavy shuffle + sort operations.
 
+Partition pruning → If missing, Spark scans unnecessary partitions.
 
+Broadcast joins → If not happening, small tables may be shuffled unnecessarily.
+
+Predicate pushdown → Ensure filters are pushed to the source (Parquet/Delta).
+
+~~
+df.explain(True)
+~
+| **Command** | **Purpose** |
+| --- | --- |
+| ``ANALYZE ``TABLE`` | Compute stats |
+| ``DESCRIBE ``EXTENDED`` | View stats |
+| ``df.explain(True)`` | Optimizer plan |
+
+Spark optimizer may choose SortMergeJoin instead of BroadcastHashJoin if statistics are missing.
+Fix: Compute table statistics.
+
+**Enterprise Problem
+15 TB Delta table
+5 million small files (classic small-file problem)
+Queries taking 12 minutes
+Heavy filtering on customer_id**
+
+Optimization Solutions
+Enable Optimize Write
+
+Produces better-sized output files during writes.
+
+Prevents creation of many tiny files.
+
+Enable Auto Compaction
+
+Automatically merges small files after writes.
+
+Run OPTIMIZE
+
+Actively compacts small files into larger ones.
+
+Liquid Clustering (on customer_id, order_date)
+
+Incremental clustering for new changes.
+
+Improves query performance for frequently filtered columns.
+
+Schedule VACUUM weekly
+
+Removes obsolete files no longer referenced in the Delta log.
+
+Saves storage space.
+
+Enable Photon on SQL Warehouse
+
+Vectorized query engine → faster execution.
+
+Partitioning (only for low-cardinality columns like order_date)
+
+Avoids over-partitioning.
+
+Helps with partition pruning when filters are frequent.
+**Results
+File count reduced dramatically.
+Data skipping improves (thanks to metadata min/max).
+Query latency drops from 12 minutes → seconds.**
 
 
 
