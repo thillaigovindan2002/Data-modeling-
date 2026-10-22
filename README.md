@@ -527,7 +527,66 @@ Bronze → raw data.
 
 Silver → cleaned/standardized.
 
-Gold → curated/aggregated.\
+Gold → curated/aggregated.
+~~~~
+Source Systems
+      ↓
+   Bronze
+      ↓
+   Silver
+      ↓
+    Gold
+      ↓
+Power BI / Tableau / Reports
+~~~~
+
+## Bronze Layer (Raw Data)
+
+Purpose: Store source data as-is.
+
+Raw data from SQL Server, SAP, APIs, CSV, JSON, etc.
+No transformations
+Keeps historical records
+Used for auditing and reprocessin
+**Bronze**
+~~~
+Customer_ID | Name      | Amount
+1           | THANI     | 1000
+1           | THANI     | 1000
+
+~~~~
+
+## Silver Layer (Cleaned Data)
+
+Purpose: Clean and standardize data.
+
+Operations:
+
+Remove duplicates
+Handle null values
+Data type conversion
+Data validation
+Join datasets
+~~~
+Customer_ID | Name      | Amount
+1           | THANI     | 1000
+~~~
+
+## Gold Layer (Business Data)
+
+Purpose: Create business-ready datasets.
+
+Operations:
+
+Aggregations
+KPIs
+Business rules
+Star schema
+Fact and Dimension tables
+~~~
+Customer_ID | Total_Sales
+1           | 1000
+~~~
 
 ## Azure SQL → Snowflake Load
 
