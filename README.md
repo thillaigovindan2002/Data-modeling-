@@ -435,13 +435,11 @@ Interview One‑liner: “External tables give flexibility — you manage the da
 
 ## Exception Handling in Pipeline
 
-Handle failures via On‑Failure activities in ADF.
+"In ADF, I implemented exception handling using Retry Policies and On-Failure dependencies.
 
-Use retry policies for transient errors.
+For transient failures such as temporary network issues or source system unavailability, I configured activity-level retry policies with 3 retries and a 30-second interval.
 
-Apply try/except in Databricks PySpark.
-
-Use EXCEPTION blocks in Snowflake scripting.
+For permanent failures, I used the On-Failure path. If a Copy Activity or Databricks activity failed even after retries, the pipeline redirected execution to an error-handling workflow. In that workflow, I logged the pipeline name, activity name, error message, and timestamp into an audit table and triggered email notifications to the support team.
 
 ## Ingest Multiple JSON Files → Snowflake
 Ingest files via Copy Activity with wildcard paths in ADLS.
